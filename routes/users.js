@@ -2,11 +2,9 @@ var express = require('express'),
     _       = require('lodash'),
     config  = require('../config'),
     jwt     = require('jsonwebtoken'),
-    db      = require('../dbconnection');
-    
-    var User=require('../models/User');
-    
+    db      = require('../dbconnection'); 
 var router = express.Router();
+
 var secretKey = "don't share this key";
 var myDate = new Date();
 function createToken(user) {
@@ -19,13 +17,18 @@ function getUserDB(email, done) {
   done(rows[0]);
   });
   }
+
+  function getUserLogin(email, done){
+    db.query('Select * from cnt_users where cnt_status=1 AND cnt_email= ?', [email], function(err, rows, fields) {
+      if(err) throw err;
+      done(rows[0]);
+    });
+  }
 router.post('/user/signup', function(req, res) {
-  // console.log(req.body);
   if(!req.body.email || !req.body.password) {
     return res.status(400).send({message :"You must send username and password"});
   }
   getUserDB(req.body.email, function(user) {
-    // console.log(user);
     if(!user) {
       user = {
         cnt_fname         : req.body.fname,
@@ -77,15 +80,22 @@ router.post('/user/login', function(req, res) {
       return res.status(401).send({
         message: "Email and Password didn't match"
       });
+    } 
+    if(user.cnt_status == 0) {
+      db.query('UPDATE cnt_users SET cnt_status=1',function(err, result) {
+        if(err) throw err;
+        res.status(201).send({
+          id_token: createToken(user),
+          user: user
+        });
+      });
+    } else {
+      res.status(201).send({
+        id_token: createToken(user),
+        user: user
+      });
     }
-    res.status(201).send({
-      id_token: createToken(user),
-      user: user
-    });
     });
 });
-
-
-
 
 module.exports=router;
