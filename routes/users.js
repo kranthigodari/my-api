@@ -10,7 +10,6 @@ var myDate = new Date();
 function createToken(user) {
   return jwt.sign(_.omit(user, 'password'), config.secretKey, { expiresIn: 60*60*5 });
 }
-
 function getUserDB(email, done) {
   db.query('Select * from cnt_users where cnt_email = ?', [email], function(err, rows, fields) {
   if (err) throw err;
@@ -19,7 +18,7 @@ function getUserDB(email, done) {
   }
 
   function getUserLogin(email, done){
-    db.query('Select * from cnt_users where cnt_status=1 AND cnt_email= ?', [email], function(err, rows, fields) {
+    db.query('Select * from cnt_users where cnt_email= ?', [email], function(err, rows, fields) {
       if(err) throw err;
       done(rows[0]);
     });
@@ -65,12 +64,12 @@ router.post('/user/signup', function(req, res) {
     else  res.status(400).send({message : "A user with that username already exists"});
   });
 });
-
 router.post('/user/login', function(req, res) {
   if(!req.body.email || !req.body.password) {
     return res.status(401).send({message: "Please make sure that you send credentials"});
   } 
-  getUserDB(req.body.email, function(user){
+  getUserLogin(req.body.email, function(user){
+    console.log(user);
     if (!user) {
       return res.status(401).send({
         message:"Please enter a valid Email Id"
@@ -82,7 +81,7 @@ router.post('/user/login', function(req, res) {
       });
     } 
     if(user.cnt_status == 0) {
-      db.query('UPDATE cnt_users SET cnt_status=1',function(err, result) {
+      db.query('UPDATE cnt_users SET cnt_status=1 where cnt_u_id ='+user.cnt_u_id,function(err, result) {
         if(err) throw err;
         res.status(201).send({
           id_token: createToken(user),

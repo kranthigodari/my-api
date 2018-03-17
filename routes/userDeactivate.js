@@ -20,8 +20,14 @@ function getAllUsers(done) {
 }
 
 app.use('/findfriends', jwtCheck);
-app.get('/findfriends/users', function(req, res) {
-    db.query('Select * from cnt_users where cnt_status=1',function(err, rows, fields) {
+app.post('/findfriends/users', function(req, res) {
+    db.query("Select * from cnt_users where cnt_status=1 AND cnt_u_id !="+req.body.cnt_u_id,function(err, rows, fields) {
+        if(err) throw err;
+        res.status(200).send(rows);
+});
+});
+app.post('/findfriends/viewUser', function(req, res) {
+    db.query("Select * from cnt_users where cnt_status=1 AND cnt_u_id ="+req.body.id,function(err, rows, fields) {
         if(err) throw err;
         res.status(200).send(rows);
 });
@@ -42,9 +48,12 @@ app.post('/deactivate/user', function(req, res) {
         message: "Email and Password didn't match"
         });
     }
-    db.query('UPDATE cnt_users SET cnt_status=0',function(err, result) {
+    db.query("UPDATE cnt_users SET cnt_status=0 where cnt_email= '"+req.body.email+"'",function(err, result) {
         if(err) throw err;
-        res.status(200).send(result.json());
+        return res.status(200).send({
+            result,
+            message: "You have successfully deactivated your account."
+            });
       });
     });
 });
